@@ -116,20 +116,40 @@ if uploaded_file is not None:
             #                 fontsize=8.5, fontweight="bold")
             #     texts.append(t)
 
+            # points = gdf.geometry.representative_point()
+            # texts = []
+            # for pt, lab in zip(points, gdf["label"]):
+            #     if pd.isna(lab):
+            #         continue
+                
+            #     # Format text: break long names by replacing spaces and hyphens with new lines
+            #     lab = str(lab).replace(" (", "\n(")
+            #     if len(lab) > 12 and "-" in lab:
+            #         lab = lab.replace("-", "-\n", 1) # Break at the first hyphen for very long names
+                
+            #     # Adjust fontsize down slightly since bold text takes up more width
+            #     t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
+            #                 fontsize=7.5, fontweight="bold")
+            #     texts.append(t)
+
+
+
             points = gdf.geometry.representative_point()
             texts = []
             for pt, lab in zip(points, gdf["label"]):
                 if pd.isna(lab):
                     continue
                 
-                # Format text: break long names by replacing spaces and hyphens with new lines
-                lab = str(lab).replace(" (", "\n(")
-                if len(lab) > 12 and "-" in lab:
-                    lab = lab.replace("-", "-\n", 1) # Break at the first hyphen for very long names
+                # Clean up stray spaces from Excel, then create the line break
+                lab = " ".join(str(lab).split()) 
+                lab = lab.replace(" (", "\n(")
                 
-                # Adjust fontsize down slightly since bold text takes up more width
+                if len(lab) > 12 and "-" in lab:
+                    lab = lab.replace("-", "-\n", 1)
+                
+                # Added multialignment="center" to perfectly stack the multiline text
                 t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
-                            fontsize=7.5, fontweight="bold")
+                            fontsize=7.5, fontweight="bold", multialignment="center")
                 texts.append(t)
                 
             
