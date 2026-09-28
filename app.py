@@ -84,7 +84,7 @@ if uploaded_file is not None:
             gdf['hex_color'] = gdf['color_index'].apply(lambda x: COLORS[int(x)] if pd.notna(x) else MISSING_COLOR)
 
             # 4. PLOT
-            fig, ax = plt.subplots(figsize=(9, 10))
+            fig, ax = plt.subplots(figsize=(14, 16))
             gdf.plot(color=gdf['hex_color'], edgecolor=EDGE_COLOR, linewidth=0.5, ax=ax)
             
 
@@ -140,16 +140,16 @@ if uploaded_file is not None:
                 if pd.isna(lab):
                     continue
                 
-                # Clean up stray spaces from Excel, then create the line break
+                # Clean up stray spaces and break the number to a new line
                 lab = " ".join(str(lab).split()) 
                 lab = lab.replace(" (", "\n(")
                 
-                if len(lab) > 12 and "-" in lab:
-                    lab = lab.replace("-", "-\n", 1)
+                # Force ALL hyphens to break into a new line for compact stacking
+                lab = lab.replace("-", "-\n")
                 
-                # Added multialignment="center" to perfectly stack the multiline text
+                # Reduced fontsize to 6.5 and kept multialignment="center"
                 t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
-                            fontsize=7.5, fontweight="bold", multialignment="center")
+                            fontsize=6.5, fontweight="bold", multialignment="center")
                 texts.append(t)
                 
             
