@@ -106,7 +106,7 @@ if uploaded_file is not None:
 
             # 5. SAVE TO BUFFER FOR DOWNLOAD
             svg_buffer = io.BytesIO()
-            plt.savefig(svg_buffer, format="svg", bbox_inches="tight")
+            plt.savefig(svg_buffer, format="png", bbox_inches="tight")
             svg_buffer.seek(0)
             
             plt.close(fig) # Clear memory
@@ -117,7 +117,7 @@ if uploaded_file is not None:
             st.download_button(
                 label="⬇️ Download Heatmap (SVG High Quality)",
                 data=svg_buffer,
-                file_name="chhattisgarh_heatmap.svg",
+                file_name="chhattisgarh_heatmap.png",
                 mime="image/svg+xml"
             )
             
