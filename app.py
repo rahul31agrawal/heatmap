@@ -86,8 +86,12 @@ if uploaded_file is not None:
             # 4. PLOT
             fig, ax = plt.subplots(figsize=(9, 10))
             gdf.plot(color=gdf['hex_color'], edgecolor=EDGE_COLOR, linewidth=0.5, ax=ax)
-            ax.legend(handles=legend_handles, title=LEGEND_LABEL, loc="lower right", 
-                      fontsize=9, title_fontsize=11, frameon=False)
+            
+
+            # bbox_to_anchor moves it outside the map. (1.05, 0.2) means just outside to the right, near the bottom.
+            ax.legend(handles=legend_handles, title=LEGEND_LABEL, 
+               loc="center left", bbox_to_anchor=(1.05, 0.2), 
+                fontsize=9, title_fontsize=11, frameon=False)
 
             points = gdf.geometry.representative_point()
             texts = []
