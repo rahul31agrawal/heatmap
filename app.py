@@ -104,19 +104,37 @@ if uploaded_file is not None:
             #                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', boxstyle='round,pad=0.2'))
             #     texts.append(t)
 
+            # points = gdf.geometry.representative_point()
+            # texts = []
+            # for pt, lab in zip(points, gdf["label"]):
+            #     if pd.isna(lab):
+            #         continue
+            #     lab = str(lab).replace(" (", "\n(")
+                
+            #     # Removed bbox, increased fontsize (you can change 8.5 to any number), and added fontweight="bold"
+            #     t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
+            #                 fontsize=8.5, fontweight="bold")
+            #     texts.append(t)
+
             points = gdf.geometry.representative_point()
             texts = []
             for pt, lab in zip(points, gdf["label"]):
                 if pd.isna(lab):
                     continue
-                lab = str(lab).replace(" (", "\n(")
                 
-                # Removed bbox, increased fontsize (you can change 8.5 to any number), and added fontweight="bold"
+                # Format text: break long names by replacing spaces and hyphens with new lines
+                lab = str(lab).replace(" (", "\n(")
+                if len(lab) > 12 and "-" in lab:
+                    lab = lab.replace("-", "-\n", 1) # Break at the first hyphen for very long names
+                
+                # Adjust fontsize down slightly since bold text takes up more width
                 t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
-                            fontsize=8.5, fontweight="bold")
+                            fontsize=7.5, fontweight="bold")
                 texts.append(t)
+                
+            
 
-            adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="grey", lw=0.4))
+            #adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="grey", lw=0.4))
             ax.set_title(TITLE, fontsize=14, fontweight="bold")
             ax.axis("off")
 
