@@ -93,64 +93,56 @@ if uploaded_file is not None:
                loc="center left", bbox_to_anchor=(1.05, 0.2), 
                 fontsize=9, title_fontsize=11, frameon=False)
 
-            # points = gdf.geometry.representative_point()
-            # texts = []
-            # for pt, lab in zip(points, gdf["label"]):
-            #     if pd.isna(lab):
-            #         continue
-            #     lab = str(lab).replace(" (", "\n(")
-                
-            #     t = ax.text(pt.x, pt.y, lab, ha="center", va="center", fontsize=LABEL_SIZE,
-            #                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', boxstyle='round,pad=0.2'))
-            #     texts.append(t)
+            
+
+
 
             # points = gdf.geometry.representative_point()
             # texts = []
             # for pt, lab in zip(points, gdf["label"]):
             #     if pd.isna(lab):
             #         continue
-            #     lab = str(lab).replace(" (", "\n(")
                 
-            #     # Removed bbox, increased fontsize (you can change 8.5 to any number), and added fontweight="bold"
+            #     # Clean up stray spaces and break the number to a new line
+            #     lab = " ".join(str(lab).split()) 
+            #     lab = lab.replace(" (", "\n(")
+                
+            #     # Force ALL hyphens to break into a new line for compact stacking
+            #     lab = lab.replace("-", "-\n")
+                
+            #     # Reduced fontsize to 6.5 and kept multialignment="center"
             #     t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
-            #                 fontsize=8.5, fontweight="bold")
+            #                 fontsize=6.5, fontweight="bold", multialignment="center")
             #     texts.append(t)
-
-            # points = gdf.geometry.representative_point()
-            # texts = []
-            # for pt, lab in zip(points, gdf["label"]):
-            #     if pd.isna(lab):
-            #         continue
-                
-            #     # Format text: break long names by replacing spaces and hyphens with new lines
-            #     lab = str(lab).replace(" (", "\n(")
-            #     if len(lab) > 12 and "-" in lab:
-            #         lab = lab.replace("-", "-\n", 1) # Break at the first hyphen for very long names
-                
-            #     # Adjust fontsize down slightly since bold text takes up more width
-            #     t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
-            #                 fontsize=7.5, fontweight="bold")
-            #     texts.append(t)
-
-
 
             points = gdf.geometry.representative_point()
-            texts = []
             for pt, lab in zip(points, gdf["label"]):
                 if pd.isna(lab):
                     continue
                 
-                # Clean up stray spaces and break the number to a new line
-                lab = " ".join(str(lab).split()) 
-                lab = lab.replace(" (", "\n(")
+                # 1. Clean up the string
+                lab = str(lab).strip()
                 
-                # Force ALL hyphens to break into a new line for compact stacking
-                lab = lab.replace("-", "-\n")
+                # 2. Split the text into Name and Value
+                if "(" in lab:
+                    parts = lab.split("(")
+                    dist_name = parts[0].strip()
+                    dist_val = f"({parts[1].strip()}"  # Re-attach the parenthesis
+                else:
+                    dist_name = lab
+                    dist_val = ""
                 
-                # Reduced fontsize to 6.5 and kept multialignment="center"
-                t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
-                            fontsize=6.5, fontweight="bold", multialignment="center")
-                texts.append(t)
+                # 3. Break long hyphenated names
+                dist_name = dist_name.replace("-", "-\n")
+                
+                # 4. Plot District Name at the center point, pushing UP (va="bottom")
+                ax.text(pt.x, pt.y, dist_name, ha="center", va="bottom", 
+                        fontsize=6.5, fontweight="bold", multialignment="center")
+                
+                # 5. Plot the Value at the EXACT same center point, pushing DOWN (va="top")
+                if dist_val:
+                    ax.text(pt.x, pt.y, dist_val, ha="center", va="top", 
+                            fontsize=6.5, fontweight="bold")
                 
             
 
