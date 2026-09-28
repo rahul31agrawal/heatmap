@@ -93,6 +93,17 @@ if uploaded_file is not None:
                loc="center left", bbox_to_anchor=(1.05, 0.2), 
                 fontsize=9, title_fontsize=11, frameon=False)
 
+            # points = gdf.geometry.representative_point()
+            # texts = []
+            # for pt, lab in zip(points, gdf["label"]):
+            #     if pd.isna(lab):
+            #         continue
+            #     lab = str(lab).replace(" (", "\n(")
+                
+            #     t = ax.text(pt.x, pt.y, lab, ha="center", va="center", fontsize=LABEL_SIZE,
+            #                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', boxstyle='round,pad=0.2'))
+            #     texts.append(t)
+
             points = gdf.geometry.representative_point()
             texts = []
             for pt, lab in zip(points, gdf["label"]):
@@ -100,8 +111,9 @@ if uploaded_file is not None:
                     continue
                 lab = str(lab).replace(" (", "\n(")
                 
-                t = ax.text(pt.x, pt.y, lab, ha="center", va="center", fontsize=LABEL_SIZE,
-                            bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', boxstyle='round,pad=0.2'))
+                # Removed bbox, increased fontsize (you can change 8.5 to any number), and added fontweight="bold"
+                t = ax.text(pt.x, pt.y, lab, ha="center", va="center", 
+                            fontsize=8.5, fontweight="bold")
                 texts.append(t)
 
             adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="grey", lw=0.4))
