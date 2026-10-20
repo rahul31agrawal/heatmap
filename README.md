@@ -23,7 +23,7 @@ A Streamlit app that turns a district-wise Excel sheet into a print-ready heatma
 
 The file must be `.xlsx`, data on the **first sheet**, **row 1 = headers**, **one row per district**.
 
-### Mandatory columns
+### Mandatory columns (general)
 
 | Column | Position | Header | Format | Used for |
 |---|---|---|---|---|
@@ -38,6 +38,27 @@ The file must be `.xlsx`, data on the **first sheet**, **row 1 = headers**, **on
 
 Everything else (e.g. `क्रम`, `प्राप्त शिकायतें`, `जनसंख्या (2025)`, `combined data`) is **ignored**. Keep them if you like, but do not move
 the three mandatory columns above.
+
+### Mandatory columns for the district-code file (e.g. `PWD.xlsx`)
+
+| Column | Header in the file | Format | Used for |
+|---|---|---|---|
+| **B** (2nd) | `जिला` | Text, Hindi district name, e.g. `सक्ती`, `जांजगीर-चांपा` | Name printed on the map (a hyphen breaks the name onto a new line) |
+| **C** (3rd) | `जिला कोड` | Whole number, LGD district code, e.g. `762` | Matches the row to the district on the map. The header must contain `कोड` or `code` |
+| **F** (6th) | `शिकायतें (प्रति 1,000 जनसंख्या)` | Number, decimals allowed, e.g. `0.08` | Colour of the district and the value printed under its name |
+
+- The Hindi name and the value are read by **position** (columns B and F), so do not move them. The code column is found by its **header** and may sit in any column.
+- `क्रम`, `प्राप्त शिकायतें` and `जनसंख्या (2025)` are ignored and can stay in the file.
+- At least 6 columns, row 1 = headers, one row per district (33 rows).
+- A district with a missing or unrecognised code, or a non-numeric value, is drawn grey and the app shows a warning naming it.
+
+Standard layout:
+
+| A | B | C | D | E | F |
+|---|---|---|---|---|---|
+| क्रम | जिला | जिला कोड | प्राप्त शिकायतें | जनसंख्या (2025) | शिकायतें (प्रति 1,000 जनसंख्या) |
+| 1 | सक्ती | 762 | 62 | 806338 | 0.08 |
+| 2 | मुंगेली | 647 | 70 | 935090 | 0.07 |
 
 ### LGD district codes (Option 1)
 
