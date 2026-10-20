@@ -4,3 +4,4 @@ geopandas>=1.0.0
 pyogrio
 matplotlib
 openpyxl
+resvg-py
