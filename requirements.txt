@@ -3,5 +3,4 @@ pandas
 geopandas>=1.0.0
 pyogrio
 matplotlib
-adjustText
 openpyxl
