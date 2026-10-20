@@ -27,7 +27,7 @@ The file must be `.xlsx`, data on the **first sheet**, **row 1 = headers**, **on
 
 | Column | Position | Header | Format | Used for |
 |---|---|---|---|---|
-| **District (English)** | any column, but the header must be spelled **exactly** `District (English)` | exact text | Text, e.g. `Janjgir Champa` | Matching the row to the district on the map |
+| **District identifier** (one of the two) | any column | **Option 1:** header contains `कोड` or `code` (e.g. `जिला कोड`, `District Code`) with the LGD district code as a number, e.g. `379`. **Option 2:** header exactly `District (English)` with text, e.g. `Janjgir Champa` | Matching the row to the district on the map. If both exist, the code is used |
 | **District name (Hindi)** | **Column B** (2nd column) | any | Text in Devanagari, e.g. `जांजगीर-चांपा` | Name printed on the map |
 | **Value** | **Column F** (6th column) | any | **Number** (decimal OK), e.g. `0.1549` | Colour of the district and the number printed under its name |
 
@@ -39,7 +39,15 @@ The file must be `.xlsx`, data on the **first sheet**, **row 1 = headers**, **on
 Everything else (e.g. `क्रम`, `प्राप्त शिकायतें`, `जनसंख्या (2025)`, `combined data`) is **ignored**. Keep them if you like, but do not move
 the three mandatory columns above.
 
-### Standard layout
+### LGD district codes (Option 1)
+
+Bijapur 636, Dantewada 376, Sukma 642, Kondagaon 643, Bastar 374, Narayanpur 637, Kanker 381, Balod 646, Dhamtari 377,
+Gariyaband 645, Mahasamund 385, Baloda Bazar 644, Bemetara 650, Raipur 387, Durg 378, Khairgarh-Chhuikhadan-Gandai 759,
+Rajnandgaon 388, Mohla-Manpur-Ambagarh Chouki 761, Korea 384, Manendragarh-Chirimiri-Bharatpur 760, Kabirdham 382,
+Mungeli 647, Janjgir-Champa 379, Bilaspur 375, Gaurella-Pendra-Marwahi 734, Korba 383, Sakti 762, Raigarh 386,
+Jashpur 380, Balrampur 649, Surguja 389, Surajpur 648, Sarangarh-Bilaigarh 763.
+
+### Standard layout (English-name version)
 
 | A | B | C | D | E | F | G |
 |---|---|---|---|---|---|---|
@@ -54,7 +62,7 @@ the three mandatory columns above.
 - Use a hyphen in Hindi names (`गौरेला-पेण्ड्रा-मरवाही`) wherever you want the name to break onto a new line on the map.
 - Do not use formulas that return errors; formulas are fine only in ignored columns.
 
-### District names (English) that are recognised
+### District names (English) that are recognised (Option 2)
 
 Matching ignores capital letters, spaces and punctuation, so `Janjgir Champa`, `Janjgir-Champa` and `janjgirchampa` all work.
 
@@ -69,8 +77,9 @@ listing it. To add another spelling, add it to the `ALIAS` dictionary in `app.py
 
 ## How the colours are decided
 
-Districts are split into 5 classes by quantiles of the (2-decimal) values, from light (low) to dark orange (high). The legend shows
-non-overlapping ranges such as `0.02 - 0.06`, `0.07 - 0.13`. If many districts share the same value, fewer than 5 classes may appear.
+Districts are split into up to 5 classes with roughly equal numbers of districts, from light (low) to dark orange (high). Class
+boundaries are taken from the actual 2-decimal values, so the legend shows non-overlapping ranges such as `0.02 - 0.06`, `0.07 - 0.12`
+(a class holding one value shows just that value). Fewer than 5 classes appear only if there are fewer than 5 distinct values.
 
 ## Output
 
@@ -83,7 +92,7 @@ non-overlapping ranges such as `0.02 - 0.06`, `0.07 - 0.13`. If many districts s
 
 | Message / symptom | Cause and fix |
 |---|---|
-| `Excel must have a header named 'District (English)'...` | The header is misspelled/missing, or the sheet has fewer than 6 columns |
+| `Excel needs either a district-code column ... or 'District (English)'` | Neither identifier column was found, or the sheet has fewer than 6 columns |
 | `No data matched for: ...` | That district's English name is not recognised, or its value is not a number |
 | Hindi letters look broken in the PNG/SVG | Make sure `packages.txt` contains `fonts-noto-core` and the app was redeployed |
 | `PNG export unavailable` | `resvg-py` missing from `requirements.txt` |
