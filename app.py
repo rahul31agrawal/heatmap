@@ -338,12 +338,29 @@ if uploaded_file is not None:
 
             st.success("Map generated successfully!")
 
-            st.download_button(
-                label="⬇️ Download Heatmap (SVG High Quality)",
-                data=svg_bytes,
-                file_name="chhattisgarh_heatmap.svg",
-                mime="image/svg+xml",
-            )
+            col_svg, col_png = st.columns(2)
+            with col_svg:
+                st.download_button(
+                    label="⬇️ Download Heatmap (SVG)",
+                    data=svg_bytes,
+                    file_name="chhattisgarh_heatmap.svg",
+                    mime="image/svg+xml",
+                )
+            with col_png:
+                # PNG is rendered from the SVG with resvg, which shapes Hindi
+                # correctly (matras/conjuncts), unlike matplotlib's own PNG output.
+                try:
+                    import resvg_py
+                    png_bytes = bytes(resvg_py.svg_to_bytes(
+                        svg_string=svg_text, dpi=300, background="white"))
+                    st.download_button(
+                        label="⬇️ Download Heatmap (PNG 300 dpi)",
+                        data=png_bytes,
+                        file_name="chhattisgarh_heatmap.png",
+                        mime="image/png",
+                    )
+                except Exception as png_err:
+                    st.caption(f"PNG export unavailable: {png_err}")
 
             st.markdown("### Map Preview:")
             st.components.v1.html(
