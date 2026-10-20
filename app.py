@@ -155,6 +155,24 @@ def draw_compass(ax, cx, cy, r=0.24):
     ax.text(cx + r + 0.10, cy, "E", **kw)
 
 
+def center_text_groups(svg_text, centers):
+    """Matplotlib positions SVG text using the width of *its* font, so when the
+    viewer uses a different Hindi font the text drifts left/right. Here every
+    label/title line is re-anchored at its true centre (text-anchor: middle)."""
+    for gid, cx in centers.items():
+        pat = re.compile(r'(<g id="%s">)(.*?)(</g>)' % re.escape(gid), re.S)
+
+        def fix(m):
+            body = re.sub(r'transform="translate\(([-\d.eE+]+) ([-\d.eE+]+)\)"',
+                          lambda t: 'transform="translate(%.3f %s)"' % (cx, t.group(2)),
+                          m.group(2))
+            body = body.replace('style="', 'style="text-anchor: middle; ')
+            return m.group(1) + body + m.group(3)
+
+        svg_text = pat.sub(fix, svg_text, count=1)
+    return svg_text
+
+
 def build_figure(gdf, lowers, uppers, department, legend_title, period_text):
     fig = plt.figure(figsize=(PAGE_W, PAGE_H), dpi=100)
     fig.patch.set_facecolor("white")
@@ -172,15 +190,18 @@ def build_figure(gdf, lowers, uppers, department, legend_title, period_text):
     ax.axis("off")
 
     # ---- district labels: name (stacked) + value, blue, bold ----
+    ax.apply_aspect()
+    centers = {}  # gid -> horizontal centre in SVG units (pt)
     points = gdf.geometry.representative_point()
-    for pt, name, val in zip(points, gdf["name_hi"], gdf["value"]):
+    for i, (pt, name, val) in enumerate(zip(points, gdf["name_hi"], gdf["value"])):
         if pd.isna(name):
             continue
         name = str(name).strip().replace("-", "\n")
         text = name if pd.isna(val) else f"{name}\n{fmt_value(val)}"
         ax.text(pt.x, pt.y, text, ha="center", va="center", multialignment="center",
                 fontsize=LABEL_SIZE, fontweight="bold", color=LABEL_COLOR,
-                linespacing=1.15, zorder=5)
+                linespacing=1.15, zorder=5, gid=f"lbl_{i}")
+        centers[f"lbl_{i}"] = ax.transData.transform((pt.x, pt.y))[0] * 72 / fig.dpi
 
     # ---- overlay axes in page inches for border, title, legend, compass ----
     ov = fig.add_axes([0, 0, 1, 1])
@@ -202,7 +223,9 @@ def build_figure(gdf, lowers, uppers, department, legend_title, period_text):
     title_objs = []
     for i, ln in enumerate(lines):
         t = ov.text(title_cx, title_top - i * line_gap, ln, ha="center", va="center",
-                    fontsize=22, fontweight="bold", color="black", zorder=10)
+                    fontsize=22, fontweight="bold", color="black", zorder=10,
+                    gid=f"title_{i}")
+        centers[f"title_{i}"] = title_cx * 72
         title_objs.append(t)
     max_w = 4.3
     size = min(fit_fontsize(fig, t, max_w, 22) for t in title_objs)
@@ -235,7 +258,7 @@ def build_figure(gdf, lowers, uppers, department, legend_title, period_text):
                                ec="black", lw=1.0, zorder=11))
         ov.text(lx0 + pad + 0.63 + 0.13, cy, f"{lowers[i]:.2f} - {uppers[i]:.2f}",
                 ha="left", va="center", fontsize=13, zorder=11)
-    return fig
+    return fig, centers
 
 
 # ==================================================================
@@ -297,14 +320,14 @@ if uploaded_file is not None:
                 lambda x: COLORS[int(x)] if pd.notna(x) else MISSING_COLOR)
 
             # 4. PLOT
-            fig = build_figure(gdf, lowers, uppers, department.strip() or DEFAULT_DEPARTMENT,
+            fig, centers = build_figure(gdf, lowers, uppers, department.strip() or DEFAULT_DEPARTMENT,
                                legend_title.strip(), period_text)
 
             # 5. SAVE TO BUFFER FOR DOWNLOAD (no bbox_inches="tight": keeps the page layout fixed)
             svg_buffer = io.StringIO()
             fig.savefig(svg_buffer, format="svg")
             plt.close(fig)
-            svg_text = svg_buffer.getvalue()
+            svg_text = center_text_groups(svg_buffer.getvalue(), centers)
             if hindi_font != "sans-serif":
                 svg_text = svg_text.replace(f"'{hindi_font}'", SVG_FONT_STACK)
             svg_bytes = svg_text.encode("utf-8")
