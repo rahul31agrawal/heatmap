@@ -33,6 +33,7 @@ EDGE_COLOR = "black"
 MISSING_COLOR = "#d9d9d9"
 SHAPE_PATH = "CG_districts_33_LGD.geojson"
 SHAPE_NAME_COL = "dtname"
+SHAPE_CODE_COL = "dist_lgd"   # LGD district code in the map file
 
 # ---- Page geometry (inches). A4 portrait, like the sample image ----
 PAGE_W, PAGE_H = 8.27, 11.69
@@ -102,15 +103,23 @@ def fit_fontsize(fig, text_obj, max_width_in, start, minimum=8):
 
 
 def make_bins(values, n=5):
-    """Quantile classes on 2-decimal values with non-overlapping legend ranges
-    (e.g. 0.00-0.03, 0.04-0.05 ...), so legend matches the numbers on the map."""
+    """Up to n classes with roughly equal numbers of districts. Cut points are
+    taken from the actual 2-decimal values, so ranges never overlap
+    (e.g. 0.01-0.02, 0.03-0.03, 0.04-0.05) and match the numbers on the map."""
     v = values.dropna().round(2)
-    edges = np.round(np.quantile(v, np.linspace(0, 1, n + 1)), 2)
-    uppers = []
-    for e in edges[1:]:
-        if not uppers or e > uppers[-1]:
-            uppers.append(float(e))
-    lowers = [float(edges[0])] + [round(u + 0.01, 2) for u in uppers[:-1]]
+    vals = sorted(v.unique())
+    cum = [int((v <= x).sum()) for x in vals]
+    total = len(v)
+    uppers, prev = [], -1
+    for k in range(1, n):
+        lo, hi = prev + 1, len(vals) - 1 - (n - k)   # leave room for later classes
+        if hi < lo:
+            break
+        idx = min(range(lo, hi + 1), key=lambda i: abs(cum[i] - k * total / n))
+        uppers.append(float(vals[idx]))
+        prev = idx
+    uppers.append(float(vals[-1]))
+    lowers = [float(vals[0])] + [round(u + 0.01, 2) for u in uppers[:-1]]
     return lowers, uppers
 
 
@@ -256,7 +265,8 @@ def build_figure(gdf, lowers, uppers, department, legend_title, period_text):
         cy = first_cy - i * 0.43
         ov.add_patch(Rectangle((lx0 + pad, cy - 0.16), 0.63, 0.32, fc=COLORS[i],
                                ec="black", lw=1.0, zorder=11))
-        ov.text(lx0 + pad + 0.63 + 0.13, cy, f"{lowers[i]:.2f} - {uppers[i]:.2f}",
+        ov.text(lx0 + pad + 0.63 + 0.13, cy, (f"{lowers[i]:.2f}" if lowers[i] == uppers[i]
+                 else f"{lowers[i]:.2f} - {uppers[i]:.2f}"),
                 ha="left", va="center", fontsize=13, zorder=11)
     return fig, centers
 
@@ -291,6 +301,16 @@ if show_period and isinstance(period, (tuple, list)) and len(period) == 2:
 # ==================================================================
 # FILE UPLOAD & PROCESSING
 # ==================================================================
+with st.expander("📄 Excel format required"):
+    st.markdown(
+        "| Column | Header | Content |\n|---|---|---|\n"
+        "| **B** (2nd) | any (e.g. `जिला`) | District name in **Hindi** – shown on the map |\n"
+        "| **C** (3rd) | `जिला कोड` / `District Code` **or** `District (English)` | LGD district **code** (number) *or* English name – used to match the map |\n"
+        "| **F** (6th) | any (e.g. `शिकायतें (प्रति 1,000 जनसंख्या)`) | **Number** to plot (plain number, not text) |\n\n"
+        "Row 1 = headers, one row per district (33 districts). All other columns are ignored. "
+        "See the README for the list of accepted English names."
+    )
+
 uploaded_file = st.file_uploader("Upload District Data (Excel)", type=["xlsx"])
 
 if uploaded_file is not None:
@@ -299,19 +319,33 @@ if uploaded_file is not None:
             # 1. READ EXCEL  (labels are built here, so no dependence on the
             #    'combined data' formula column having cached values)
             df = pd.read_excel(uploaded_file)
+            if df.shape[1] < 6:
+                raise ValueError("Excel needs at least 6 columns: Hindi district name in column B "
+                                 "and the numeric value in column F.")
+
+            # Districts are matched by LGD district code if a code column exists
+            # (header contains 'कोड' or 'code'), otherwise by 'District (English)'.
+            code_col = next((c for c in df.columns
+                             if "कोड" in str(c) or "code" in str(c).lower()), None)
             dat = pd.DataFrame({
-                "district_en": df["District (English)"],
                 "name_hi": df.iloc[:, 1],
                 "value": pd.to_numeric(df.iloc[:, 5], errors="coerce"),
             })
-            dat["key"] = dat["district_en"].map(make_key)
 
             # 2. READ MAP FILE AND JOIN
             gdf = gpd.read_file(SHAPE_PATH)
-            gdf["key"] = gdf[SHAPE_NAME_COL].map(make_key).map(lambda k: ALIAS.get(k, k))
             # Plain lon/lat (no projection) gives the slightly wider state outline used in the sample.
             # To use a true-shape projection instead, add: gdf = gdf.to_crs(32644)
-            gdf = gdf.merge(dat.drop(columns="district_en"), on="key", how="left")
+            if code_col is not None:
+                dat["key"] = pd.to_numeric(df[code_col], errors="coerce")
+                gdf["key"] = pd.to_numeric(gdf[SHAPE_CODE_COL], errors="coerce")
+            elif "District (English)" in df.columns:
+                dat["key"] = df["District (English)"].map(make_key)
+                gdf["key"] = gdf[SHAPE_NAME_COL].map(make_key).map(lambda k: ALIAS.get(k, k))
+            else:
+                raise ValueError("Excel needs either a district-code column (e.g. 'जिला कोड') "
+                                 "or a column named 'District (English)'.")
+            gdf = gdf.merge(dat, on="key", how="left")
 
             # 3. CLASSES (5 ranges, legend matches the displayed 2-decimal values)
             lowers, uppers = make_bins(gdf["value"], 5)
